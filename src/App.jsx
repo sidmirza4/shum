@@ -10,52 +10,75 @@ const SECTIONS = [
   {
     id: "years",
     paragraphs: [
-      { text: "8 years.", type: "body", delay: 2000 },
-      { text: "Not perfect years.", type: "body", delay: 2200 },
-      { text: "Not easy years.", type: "body", delay: 2200 },
-      { text: "But real years.", type: "body", marginTop: true, delay: 3500 },
+      { text: "Shumaila.", type: "heading", delay: 2000 },
+      { text: "More than 8 years ago… you walked into my life.", type: "body", marginTop: true, delay: 3000 },
+      { text: "And somehow, you never really left.", type: "body", delay: 3500 },
+      { text: "No matter how messy, complicated, or imperfect we were.", type: "body", delay: 4000 },
     ],
   },
   {
     id: "truth",
     paragraphs: [
+      { text: "We weren’t always easy.", type: "body", delay: 2500 },
       { text: "We fought.", type: "body", delay: 2200 },
-      { text: "We misunderstood.", type: "body", delay: 2200 },
-      { text: "We disappeared sometimes.", type: "body", delay: 2500 },
-      { text: "But somehow… we always came back.", type: "body", marginTop: true, delay: 4000 },
+      { text: "We stopped talking.", type: "body", delay: 2200 },
+      { text: "Sometimes… we even walked away for months.", type: "body", marginTop: true, delay: 3500 },
+      { text: "But somehow… we always found our way back to each other.", type: "body", marginTop: true, delay: 4000 },
     ],
   },
   {
-    id: "sneakers",
+    id: "accountability",
     paragraphs: [
-      { text: "When you gave me those sneakers…", type: "body", delay: 2500 },
-      { text: "I felt something different.", type: "body", delay: 2500 },
-      { text: "I felt chosen.", type: "body", marginTop: true, delay: 3000 },
-      {
-        text: "And I don't think I've told you how much that meant.",
-        type: "body",
-        marginTop: true,
-        delay: 4000,
-      },
+      { text: "I wasn’t always the man you deserved.", type: "body", delay: 2500 },
+      { text: "I hurt you in ways I wish I could undo.", type: "body", delay: 3000 },
+      { text: "I didn’t always know how to show how deeply I loved you.", type: "body", delay: 3500 },
+      { text: "But not a single day passed where I chose anyone else over you.", type: "body", marginTop: true, delay: 4000 },
+      { text: "Even when it was hard… I chose you.", type: "body", delay: 3500 },
+    ],
+  },
+  {
+    id: "choice",
+    paragraphs: [
+      { text: "From the day you became part of my world,", type: "body", delay: 2500 },
+      { text: "I couldn’t imagine another girl in your place.", type: "body", delay: 3000 },
+      { text: "No matter how stubborn I was.", type: "body", delay: 2500 },
+      { text: "No matter how much convincing it took.", type: "body", delay: 2500 },
+      { text: "It was always you.", type: "body", marginTop: true, delay: 4000 },
+    ],
+  },
+  {
+    id: "growth",
+    paragraphs: [
+      { text: "But love is not just choosing.", type: "body", delay: 2500 },
+      { text: "It is learning.", type: "body", delay: 2500 },
+      { text: "It is growing.", type: "body", delay: 2500 },
+      { text: "It is becoming better… for the person who stayed.", type: "body", marginTop: true, delay: 3500 },
+      { text: "And I am not the same man I was before.", type: "body", delay: 3500 },
+      { text: "I want to love you the way you deserve to be loved.", type: "body", marginTop: true, delay: 4000 },
     ],
   },
   {
     id: "stay",
     paragraphs: [
-      { text: "I don't want dramatic love.", type: "body", delay: 2500 },
-      { text: "I don't want temporary love.", type: "body", delay: 2500 },
-      { text: "I want peaceful love.", type: "body", marginTop: true, delay: 3500 },
-      { text: "With you.", type: "body", delay: 4000 },
+      { text: "Sid has always been part of your name.", type: "body", delay: 3000 },
+      { text: "But you have always been my whole heart.", type: "body", delay: 3500 },
+      { text: "I don’t promise perfection.", type: "body", marginTop: true, delay: 3000 },
+      { text: "I promise effort.", type: "body", delay: 2500 },
+      { text: "I promise growth.", type: "body", delay: 2500 },
+      { text: "I promise to choose you… every single day.", type: "body", marginTop: true, delay: 4000 },
     ],
   },
   {
     id: "final",
     paragraphs: [
-      { text: "Happy Valentine's Day.", type: "heading", delay: 2000 },
-      { text: "Thank you for choosing me again.", type: "body", marginTop: true, delay: 3500 },
+      { text: "Shumaila Siddiqui…", type: "heading", delay: 2500 },
+      { text: "Will you stay with me?", type: "body", marginTop: true, delay: 4000 },
+      { text: "Not because we’ve been together for 8 years.", type: "body", marginTop: true, delay: 3500 },
+      { text: "But because we are finally learning how to love each other better.", type: "body", delay: 4500 },
     ],
   },
 ];
+
 
 const INITIAL_DELAY_MS = 800;
 const SECTION_HOLD_MS = 2500;
@@ -107,9 +130,12 @@ export default function App() {
   const [visibleCount, setVisibleCount] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const timerRef = useRef(null);
   const exitTimerRef = useRef(null);
   const volumeFadeRef = useRef(null);
+  const pausedTimeRef = useRef(null);
+  const remainingTimeRef = useRef(null);
 
   const section = SECTIONS[sectionIndex];
   const isIntro = section?.intro === true;
@@ -154,6 +180,26 @@ export default function App() {
 
   const isLastSection = sectionIndex === SECTIONS.length - 1;
 
+  // Handle pause/play toggle
+  const handleTogglePause = useCallback(() => {
+    if (isIntro && !musicPlaying) return; // Don't allow pause before starting
+    
+    const audio = audioRef.current;
+    if (!isPaused) {
+      // Pausing
+      if (audio && !audio.paused) {
+        audio.pause();
+      }
+      setIsPaused(true);
+    } else {
+      // Resuming
+      if (audio && audio.paused && musicPlaying) {
+        audio.play();
+      }
+      setIsPaused(false);
+    }
+  }, [isPaused, isIntro, musicPlaying]);
+
   // Trigger confetti on final section when first paragraph appears
   useEffect(() => {
     if (isLastSection && visibleCount === 1 && !showConfetti) {
@@ -163,7 +209,7 @@ export default function App() {
 
   // Auto-advance: paragraphs appear one by one, then section exits
   useEffect(() => {
-    if (isExiting) return;
+    if (isExiting || isPaused) return;
 
     if (isIntro) {
       if (!musicPlaying) return;
@@ -176,6 +222,11 @@ export default function App() {
     if (visibleCount < paragraphs.length) {
       // First paragraph: shorter delay after section appears; rest: use custom delay
       const delay = visibleCount === 0 ? INITIAL_DELAY_MS : (paragraphs[visibleCount - 1]?.delay || 2500);
+      
+      const startTime = Date.now();
+      pausedTimeRef.current = startTime;
+      remainingTimeRef.current = delay;
+      
       timerRef.current = setTimeout(
         () => setVisibleCount((prev) => prev + 1),
         delay
@@ -188,7 +239,31 @@ export default function App() {
       timerRef.current = setTimeout(goToNextSection, SECTION_HOLD_MS);
     }
     return () => clearTimeout(timerRef.current);
-  }, [isIntro, musicPlaying, section, visibleCount, isExiting, isLastSection, goToNextSection]);
+  }, [isIntro, musicPlaying, section, visibleCount, isExiting, isLastSection, isPaused, goToNextSection]);
+
+  // Handle pause/resume of timers
+  useEffect(() => {
+    if (isPaused && timerRef.current) {
+      // Save remaining time and clear timer
+      const elapsed = Date.now() - pausedTimeRef.current;
+      remainingTimeRef.current = Math.max(0, remainingTimeRef.current - elapsed);
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    } else if (!isPaused && !timerRef.current && remainingTimeRef.current !== null) {
+      // Resume with remaining time
+      if (isIntro) {
+        timerRef.current = setTimeout(goToNextSection, remainingTimeRef.current);
+      } else if (visibleCount < section.paragraphs.length) {
+        pausedTimeRef.current = Date.now();
+        timerRef.current = setTimeout(
+          () => setVisibleCount((prev) => prev + 1),
+          remainingTimeRef.current
+        );
+      } else if (!isLastSection) {
+        timerRef.current = setTimeout(goToNextSection, remainingTimeRef.current);
+      }
+    }
+  }, [isPaused, isIntro, visibleCount, section, isLastSection, goToNextSection]);
 
   useEffect(() => {
     const tryPlay = () => {
@@ -243,13 +318,16 @@ export default function App() {
   const progressRatio = sectionIndex / (totalSections - 1);
 
   return (
-    <div style={{
-      ...styles.wrapper,
-      background: `linear-gradient(180deg, 
-        rgb(${Math.round(248 - progressRatio * 15)}, ${Math.round(244 - progressRatio * 15)}, ${Math.round(241 - progressRatio * 15)}) 0%, 
-        rgb(${Math.round(239 - progressRatio * 20)}, ${Math.round(231 - progressRatio * 20)}, ${Math.round(225 - progressRatio * 20)}) 100%)`,
-      transition: 'background 2s ease-in-out',
-    }}>
+    <div 
+      style={{
+        ...styles.wrapper,
+        background: `linear-gradient(180deg, 
+          rgb(${Math.round(248 - progressRatio * 15)}, ${Math.round(244 - progressRatio * 15)}, ${Math.round(241 - progressRatio * 15)}) 0%, 
+          rgb(${Math.round(239 - progressRatio * 20)}, ${Math.round(231 - progressRatio * 20)}, ${Math.round(225 - progressRatio * 20)}) 100%)`,
+        transition: 'background 2s ease-in-out',
+      }}
+      onClick={handleTogglePause}
+    >
       <audio ref={audioRef} src="/music.m4a" loop preload="auto" />
       <style>
         {`
@@ -283,6 +361,24 @@ export default function App() {
             10% { opacity: 1; }
             100% { transform: translateY(110vh) translateX(var(--tx)) rotate(var(--rot)) scale(0.5); opacity: 0; }
           }
+          @keyframes pulse-fade {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+          }
+          .pause-indicator {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 300;
+            color: #2E2A27;
+            opacity: 0.5;
+            pointer-events: none;
+            z-index: 100;
+            animation: pulse-fade 2s ease-in-out infinite;
+          }
         `}
       </style>
 
@@ -298,6 +394,7 @@ export default function App() {
               opacity: h.opacity,
               color: "#c9a0a0",
               pointerEvents: "none",
+              animationPlayState: isPaused ? 'paused' : 'running',
             }}
           >
             ♥
@@ -315,6 +412,7 @@ export default function App() {
               opacity: h.opacity,
               pointerEvents: "none",
               animation: `heart-fall ${h.duration}s ease-in-out ${h.delay} infinite`,
+              animationPlayState: isPaused ? 'paused' : 'running',
             }}
           >
             ♥
@@ -335,6 +433,7 @@ export default function App() {
               opacity: p.opacity,
               pointerEvents: "none",
               animation: `petal-fall ${p.duration}s ease-in-out ${p.delay} infinite`,
+              animationPlayState: isPaused ? 'paused' : 'running',
             }}
           />
         ))}
@@ -363,6 +462,7 @@ export default function App() {
                 opacity: 0.9,
                 pointerEvents: "none",
                 animation: `confetti-fall ${randomDuration}s ease-in ${randomDelay}s forwards`,
+                animationPlayState: isPaused ? 'paused' : 'running',
                 '--tx': `${randomTx}px`,
                 '--rot': `${randomRot}deg`,
               }}
@@ -370,6 +470,13 @@ export default function App() {
           );
         })}
       </div>
+
+      {/* Pause Indicator */}
+      {isPaused && musicPlaying && (
+        <div className="pause-indicator">
+          Paused · Click anywhere to continue
+        </div>
+      )}
 
       <div style={styles.viewport}>
         <AnimatePresence mode="wait">
@@ -403,7 +510,10 @@ export default function App() {
                 >
                   <button
                     type="button"
-                    onClick={handlePlayMusic}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePlayMusic();
+                    }}
                     style={styles.beginButton}
                     className="begin-btn"
                   >
@@ -454,7 +564,8 @@ export default function App() {
                   {visibleCount === section.paragraphs.length && (
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         const audio = audioRef.current;
                         if (audio) {
                           audio.pause();
@@ -464,6 +575,7 @@ export default function App() {
                         setSectionIndex(0);
                         setVisibleCount(0);
                         setShowConfetti(false);
+                        setIsPaused(false);
                         if (volumeFadeRef.current) {
                           cancelAnimationFrame(volumeFadeRef.current);
                         }
