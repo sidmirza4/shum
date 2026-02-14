@@ -122,6 +122,12 @@ const PETALS = Array.from({ length: 12 }, (_, i) => ({
   rotation: (i * 30) % 360,
 }));
 
+const BIG_HEARTS = [
+  { left: "5%", top: "10%", size: 250, opacity: 0.12, rotation: -15 },
+  { left: "85%", top: "15%", size: 200, opacity: 0.1, rotation: 25 },
+  { left: "10%", top: "75%", size: 160, opacity: 0.13, rotation: 12 },
+];
+
 export default function App() {
   const audioRef = useRef(null);
   const hasStartedMusicRef = useRef(false);
@@ -383,6 +389,26 @@ export default function App() {
       </style>
 
       <div style={styles.backgroundLayer} aria-hidden>
+        {/* Big Decorative Hearts in Corners */}
+        {BIG_HEARTS.map((h, i) => (
+          <span
+            key={`big-heart-${i}`}
+            style={{
+              position: "absolute",
+              left: h.left,
+              top: h.top,
+              fontSize: h.size,
+              opacity: h.opacity,
+              color: "#c9a0a0",
+              pointerEvents: "none",
+              transform: `rotate(${h.rotation}deg)`,
+              userSelect: "none",
+            }}
+          >
+            ♥
+          </span>
+        ))}
+        
         {HEARTS.map((h, i) => (
           <span
             key={`heart-${i}`}
