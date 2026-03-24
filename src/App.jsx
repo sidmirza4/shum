@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
+import Lottie from "lottie-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const SECTIONS = [
@@ -82,11 +83,7 @@ const SECTIONS = [
 
 const INITIAL_DELAY_MS = 800;
 const SECTION_HOLD_MS = 2500;
-const INTRO_HOLD_MS = 2000;
 const EXIT_DURATION_MS = 600;
-const MUSIC_FADE_DURATION_MS = 8000; // 8 seconds to reach full volume
-const INITIAL_VOLUME = 0.05;
-const TARGET_VOLUME = 0.5;
 
 const HEARTS = [
   { left: "8%", top: "12%", size: 16, opacity: 0.1 },
@@ -130,12 +127,14 @@ const BIG_HEARTS = [
 
 export default function App() {
   const audioRef = useRef(null);
-  const hasStartedMusicRef = useRef(false);
+  const laughAudioRef = useRef(null);
   const [musicPlaying, setMusicPlaying] = useState(false);
   const [sectionIndex, setSectionIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showLaughEmoji, setShowLaughEmoji] = useState(false);
+  const [laughAnimationData, setLaughAnimationData] = useState(null);
   const [isPaused, setIsPaused] = useState(false);
   const timerRef = useRef(null);
   const exitTimerRef = useRef(null);
@@ -157,31 +156,16 @@ export default function App() {
   }, [sectionIndex]);
 
   const handlePlayMusic = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.volume = INITIAL_VOLUME;
-    audio
-      .play()
-      .then(() => {
-        setMusicPlaying(true);
-        hasStartedMusicRef.current = true;
-        
-        // Gradually increase volume
-        const startTime = Date.now();
-        const fadeVolume = () => {
-          const elapsed = Date.now() - startTime;
-          const progress = Math.min(elapsed / MUSIC_FADE_DURATION_MS, 1);
-          audio.volume = INITIAL_VOLUME + (TARGET_VOLUME - INITIAL_VOLUME) * progress;
-          
-          if (progress < 1) {
-            volumeFadeRef.current = requestAnimationFrame(fadeVolume);
-          }
-        };
-        volumeFadeRef.current = requestAnimationFrame(fadeVolume);
-      })
-      .catch((err) => {
-        console.warn("[Music] Play button failed:", err);
+    setShowLaughEmoji(true);
+    setMusicPlaying(false);
+
+    const laughAudio = laughAudioRef.current;
+    if (laughAudio) {
+      laughAudio.currentTime = 0;
+      laughAudio.play().catch(() => {
+        // Ignore playback restrictions.
       });
+    }
   }, []);
 
   const isLastSection = sectionIndex === SECTIONS.length - 1;
@@ -218,10 +202,8 @@ export default function App() {
     if (isExiting || isPaused) return;
 
     if (isIntro) {
-      if (!musicPlaying) return;
-      // After intro + music starts, hold then exit
-      timerRef.current = setTimeout(goToNextSection, INTRO_HOLD_MS);
-      return () => clearTimeout(timerRef.current);
+      // Stop progression on intro after laugh moment.
+      return;
     }
 
     const paragraphs = section.paragraphs;
@@ -272,41 +254,25 @@ export default function App() {
   }, [isPaused, isIntro, visibleCount, section, isLastSection, goToNextSection]);
 
   useEffect(() => {
-    const tryPlay = () => {
-      if (hasStartedMusicRef.current) return;
-      hasStartedMusicRef.current = true;
-      const audio = audioRef.current;
-      if (!audio) return;
-      audio.volume = INITIAL_VOLUME;
-      audio
-        .play()
-        .then(() => {
-          setMusicPlaying(true);
-          
-          // Gradually increase volume
-          const startTime = Date.now();
-          const fadeVolume = () => {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / MUSIC_FADE_DURATION_MS, 1);
-            audio.volume = INITIAL_VOLUME + (TARGET_VOLUME - INITIAL_VOLUME) * progress;
-            
-            if (progress < 1) {
-              volumeFadeRef.current = requestAnimationFrame(fadeVolume);
-            }
-          };
-          volumeFadeRef.current = requestAnimationFrame(fadeVolume);
-        })
-        .catch(() => {
-          hasStartedMusicRef.current = false;
-        });
+    let isMounted = true;
+    fetch("/laugh.json")
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted) {
+          setLaughAnimationData(data);
+        }
+      })
+      .catch(() => {
+        // Keep fallback emoji if JSON fails to load.
+      });
+    return () => {
+      isMounted = false;
     };
-    const events = ["click", "keydown", "touchstart"];
-    const onInteraction = () => {
-      tryPlay();
-      events.forEach((e) => document.removeEventListener(e, onInteraction));
-    };
-    events.forEach((e) => document.addEventListener(e, onInteraction, { once: true, passive: true }));
-    return () => events.forEach((e) => document.removeEventListener(e, onInteraction));
+  }, []);
+
+  useEffect(() => {
+    // Background music intentionally disabled.
+    return undefined;
   }, []);
 
   useEffect(() => {
@@ -335,6 +301,7 @@ export default function App() {
       onClick={handleTogglePause}
     >
       <audio ref={audioRef} src="/music.m4a" loop preload="auto" />
+      <audio ref={laughAudioRef} src="/laugh.mp3" loop preload="auto" />
       <style>
         {`
           html, body {
@@ -384,6 +351,24 @@ export default function App() {
             pointer-events: none;
             z-index: 100;
             animation: pulse-fade 2s ease-in-out infinite;
+          }
+          .laugh-emoji {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(70vw, 320px);
+            height: min(70vw, 320px);
+            z-index: 120;
+            pointer-events: none;
+            filter: drop-shadow(0 10px 26px rgba(0, 0, 0, 0.15));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .laugh-emoji-fallback {
+            font-size: clamp(68px, 26vw, 210px);
+            line-height: 1;
           }
         `}
       </style>
@@ -501,6 +486,15 @@ export default function App() {
       {isPaused && musicPlaying && (
         <div className="pause-indicator">
           Paused · Click anywhere to continue
+        </div>
+      )}
+      {showLaughEmoji && (
+        <div className="laugh-emoji" aria-hidden>
+          {laughAnimationData ? (
+            <Lottie animationData={laughAnimationData} loop autoplay style={{ width: "100%", height: "100%" }} />
+          ) : (
+            <span className="laugh-emoji-fallback">🤣</span>
+          )}
         </div>
       )}
 
